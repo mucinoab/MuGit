@@ -1,0 +1,8 @@
+[package]
+name = "mu_git"
+version = "0.1.0"
+authors = ["Bruno A. Muciño <mucinoab@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+sha1 = { version = "0.6.0", features = ["std"] }
