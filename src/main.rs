@@ -1,14 +1,18 @@
+#![feature(const_str_from_utf8_unchecked)]
+
 use std::{env, path::Path, time::Instant};
 
+mod base;
 mod data;
 
 fn main() {
     let now = Instant::now();
+    let mut args = env::args();
 
-    let current_dir = env::args().next().unwrap();
+    let current_dir = args.next().unwrap();
 
     // TODO use clap
-    if let Some(arg) = env::args().nth(1) {
+    if let Some(arg) = args.next() {
         match arg.as_str() {
             "init" => {
                 data::init();
@@ -18,15 +22,22 @@ fn main() {
                     data::GIT_DIR
                 ); // TODO is this the current dir?
             }
-            "commit" => {}
+
+            "cat-file" => cat_file(args.next().unwrap()),
+
+            "hash-object" => hash_object(args.next().unwrap()),
+
             _ => {}
         }
     }
 
-    data::get_object(
-        data::hash_object(Path::new("./src/main.rs"), Some("blob")),
-        Some("blob"),
-    );
-
     println!("{:?}", Instant::now().duration_since(now));
+}
+
+fn cat_file(object: String) {
+    println!("{}", data::get_object(object, None));
+}
+
+fn hash_object(object: String) {
+    println!("{}", data::hash_object(Path::new(&object), None));
 }
