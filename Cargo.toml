@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 sha1 = { version = "0.6.0", features = ["std"] }
+lazy_static = "1.4.0"

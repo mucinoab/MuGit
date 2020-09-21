@@ -1,5 +1,6 @@
 /target
-/release 
+/release
 /debug
 /.mu_git
-.rustc_info.json  
+.rustc_info.json
+.git

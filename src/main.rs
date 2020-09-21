@@ -2,6 +2,9 @@
 
 use std::{env, path::Path, time::Instant};
 
+#[macro_use]
+extern crate lazy_static;
+
 mod utils;
 
 fn main() {

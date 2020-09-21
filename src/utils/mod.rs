@@ -1,7 +1,20 @@
-use std::{fs, path::Path};
+use std::{
+    fs::{self, File},
+    io::{prelude::*, BufReader},
+    path::Path,
+};
 
 pub const GIT_DIR: &str = "./.mu_git";
 const NULL_CHAR: &str = unsafe { std::str::from_utf8_unchecked(&[0]) };
+
+lazy_static! {
+    static ref GITIGNORE: Vec<String> = {
+        BufReader::new(File::open(".gitignore").unwrap())
+            .lines()
+            .filter_map(Result::ok)
+            .collect()
+    };
+}
 
 pub fn init() {
     fs::create_dir(GIT_DIR).expect("Failed to create .mu_git directory");
@@ -49,18 +62,17 @@ pub fn write_tree(dir: &Path) {
         if path.is_dir() {
             write_tree(&path);
         } else {
-            println!("{}", hash_object(&path, Some("full")));
+            println!("{} {:?}", hash_object(&path, None), &path);
         }
     }
 }
 
 fn is_ignored(path: &Path) -> bool {
-    let ignore = [".git", ".mu_git", "debug", "release"];
-    let path = path.to_str().unwrap_or("");
-
-    for item in &ignore {
-        if path.contains(item) {
-            return true;
+    if let Some(path) = path.to_str() {
+        for item in GITIGNORE.iter() {
+            if path.contains(item) {
+                return true;
+            }
         }
     }
     false
