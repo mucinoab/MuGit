@@ -9,10 +9,15 @@ const NULL_CHAR: &str = unsafe { std::str::from_utf8_unchecked(&[0]) };
 
 lazy_static! {
     static ref GITIGNORE: Vec<String> = {
-        BufReader::new(File::open(".gitignore").unwrap())
-            .lines()
-            .filter_map(Result::ok)
-            .collect()
+        if let Ok(file) = File::open(".gitignore") {
+            BufReader::new(file)
+                .lines()
+                .filter_map(Result::ok)
+                .map(|x| x.trim().to_string())
+                .collect()
+        } else {
+            Vec::new()
+        }
     };
 }
 
@@ -22,10 +27,9 @@ pub fn init() {
         .expect("Failed to create .mu_git/objects directory");
 }
 
-pub fn hash_object(path: &Path, type_: Option<&str>) -> String {
+pub fn hash_object(data: String, type_: Option<&str>) -> String {
     let mut obj = String::from(type_.unwrap_or("blob"));
 
-    let data = fs::read_to_string(path).unwrap();
     obj.push_str(NULL_CHAR);
     obj.push_str(&data);
 
@@ -50,21 +54,39 @@ pub fn get_object(oid: String, expected: Option<&str>) -> String {
     content.to_owned()
 }
 
-pub fn write_tree(dir: &Path) {
+pub fn write_tree(dir: &Path) -> String {
+    let mut entries = Vec::new();
+
     for entry in fs::read_dir(dir).unwrap() {
         let entry = entry.unwrap();
         let path = entry.path();
+
+        let type_;
+        let oid;
+        let file_name = path.file_name().unwrap_or_default().to_str();
 
         if is_ignored(&path) {
             continue;
         }
 
         if path.is_dir() {
-            write_tree(&path);
+            type_ = "tree";
+            oid = write_tree(&path);
         } else {
-            println!("{} {:?}", hash_object(&path, None), &path);
+            type_ = "blob";
+            oid = hash_object(fs::read_to_string(&path).unwrap_or_default(), None);
         }
+
+        entries.push(format!(
+            "{} {} {}",
+            file_name.unwrap_or_default(),
+            oid,
+            type_
+        ));
     }
+
+    entries.sort_unstable();
+    hash_object(entries.join("\n"), Some("tree"))
 }
 
 fn is_ignored(path: &Path) -> bool {

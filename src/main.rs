@@ -1,9 +1,9 @@
 #![feature(const_str_from_utf8_unchecked)]
 
-use std::{env, path::Path, time::Instant};
-
 #[macro_use]
 extern crate lazy_static;
+
+use std::{env, path::Path, time::Instant};
 
 mod utils;
 
@@ -25,11 +25,11 @@ fn main() {
                 ); // TODO is this the current dir?
             }
 
-            "cat-file" => cat_file(args.next().unwrap()),
-
-            "hash-object" => hash_object(args.next().unwrap()),
-
             "write-tree" => write_tree(),
+
+            "cat-file" => cat_file(args.next().expect("Missing argument")),
+
+            "hash-object" => hash_object(args.next().expect("Missing argument")),
 
             _ => {}
         }
@@ -43,10 +43,9 @@ fn cat_file(object: String) {
 }
 
 fn hash_object(object: String) {
-    println!("{}", utils::hash_object(Path::new(&object), None));
+    println!("{}", utils::hash_object(object, None));
 }
 
 fn write_tree() {
-    utils::write_tree(Path::new("."));
-    println!("");
+    println!("{}", utils::write_tree(Path::new(".")));
 }
