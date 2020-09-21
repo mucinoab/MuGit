@@ -18,7 +18,7 @@ pub fn hash_object(path: &Path, type_: Option<&str>) -> String {
 
     let oid = sha1::Sha1::from(&obj).hexdigest();
 
-    fs::write(format!("{}/objects/{}", GIT_DIR, oid), obj).unwrap();
+    fs::write(format!("{}/objects/{}", GIT_DIR, oid), obj).expect("Could not write object file");
 
     return oid;
 }
@@ -35,4 +35,33 @@ pub fn get_object(oid: String, expected: Option<&str>) -> String {
     }
 
     content.to_owned()
+}
+
+pub fn write_tree(dir: &Path) {
+    for entry in fs::read_dir(dir).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+
+        if is_ignored(&path) {
+            continue;
+        }
+
+        if path.is_dir() {
+            write_tree(&path);
+        } else {
+            println!("{}", hash_object(&path, Some("full")));
+        }
+    }
+}
+
+fn is_ignored(path: &Path) -> bool {
+    let ignore = [".git", ".mu_git", "debug", "release"];
+    let path = path.to_str().unwrap_or("");
+
+    for item in &ignore {
+        if path.contains(item) {
+            return true;
+        }
+    }
+    false
 }

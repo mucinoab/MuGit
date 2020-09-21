@@ -2,8 +2,7 @@
 
 use std::{env, path::Path, time::Instant};
 
-mod base;
-mod data;
+mod utils;
 
 fn main() {
     let now = Instant::now();
@@ -15,17 +14,19 @@ fn main() {
     if let Some(arg) = args.next() {
         match arg.as_str() {
             "init" => {
-                data::init();
+                utils::init();
                 println!(
                     "Initialized empty Git repository in {}{}",
                     current_dir,
-                    data::GIT_DIR
+                    utils::GIT_DIR
                 ); // TODO is this the current dir?
             }
 
             "cat-file" => cat_file(args.next().unwrap()),
 
             "hash-object" => hash_object(args.next().unwrap()),
+
+            "write-tree" => write_tree(),
 
             _ => {}
         }
@@ -35,9 +36,14 @@ fn main() {
 }
 
 fn cat_file(object: String) {
-    println!("{}", data::get_object(object, None));
+    println!("{}", utils::get_object(object, None));
 }
 
 fn hash_object(object: String) {
-    println!("{}", data::hash_object(Path::new(&object), None));
+    println!("{}", utils::hash_object(Path::new(&object), None));
+}
+
+fn write_tree() {
+    utils::write_tree(Path::new("."));
+    println!("");
 }
