@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{self, File},
     io::{prelude::*, BufReader},
     path::Path,
@@ -114,18 +115,19 @@ fn tree_entries(oid: String) -> Vec<(String, String, String)> {
         .collect()
 }
 
-pub fn get_tree(oid: String, base_path: String) -> Vec<(String, String)> {
-    let mut result = Vec::new();
+pub fn get_tree(oid: String, base_path: String) -> HashMap<String, String> {
+    let mut result = HashMap::new();
+
     for (name, oid, type_) in tree_entries(oid) {
         let mut path = format!("{}{}", base_path, name);
         match type_.as_str() {
             "blob" => {
-                result.push((path, oid));
+                result.insert(path, oid);
             }
 
             "tree" => {
                 path.push('/');
-                result = get_tree(oid, path);
+                result.extend(get_tree(oid, path));
             }
 
             _ => unreachable!("Unknown entry {}", type_),
@@ -137,7 +139,6 @@ pub fn get_tree(oid: String, base_path: String) -> Vec<(String, String)> {
 
 pub fn read_tree(tree_oid: String) {
     for (path, oid) in get_tree(tree_oid, String::from("./")) {
-        eprintln!("{}  -  {}", &path, &oid);
         fs::create_dir_all(Path::new(&path)).unwrap_or_default();
         fs::write(Path::new(&path), get_object(oid, None)).unwrap();
     }
