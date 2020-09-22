@@ -5,11 +5,13 @@ use std::{
     path::Path,
 };
 
+use walkdir::WalkDir;
+
 pub const GIT_DIR: &str = "./.mu_git";
 const NULL_CHAR: &str = unsafe { std::str::from_utf8_unchecked(&[0]) };
 
 lazy_static! {
-    static ref GITIGNORE: Vec<String> = {
+    static ref GIT_IGNORE: Vec<String> = {
         if let Ok(file) = File::open(".gitignore") {
             BufReader::new(file)
                 .lines()
@@ -92,7 +94,7 @@ pub fn write_tree(dir: &Path) -> String {
 
 fn is_ignored(path: &Path) -> bool {
     if let Some(path) = path.to_str() {
-        for item in GITIGNORE.iter() {
+        for item in GIT_IGNORE.iter() {
             if path.contains(item) {
                 return true;
             }
@@ -138,8 +140,36 @@ pub fn get_tree(oid: String, base_path: String) -> HashMap<String, String> {
 }
 
 pub fn read_tree(tree_oid: String) {
+    empty_current_dir();
     for (path, oid) in get_tree(tree_oid, String::from("./")) {
+        println!("{}", path);
         fs::create_dir_all(Path::new(&path)).unwrap_or_default();
         fs::write(Path::new(&path), get_object(oid, None)).unwrap();
     }
 }
+
+pub fn empty_current_dir() {
+    for entry in WalkDir::new(".")
+        .into_iter()
+        .filter_entry(|e| !is_ignored(e.path()))
+        .filter_map(|e| e.ok())
+    {
+        println!("{}", entry.path().display());
+        let path = entry.path();
+
+        if entry.path().is_file() {
+            fs::remove_file(path).unwrap();
+        } else {
+            fs::remove_dir(path).unwrap();
+        }
+    }
+}
+
+// def _empty_current_directory ():
+//     for root, _, filenames in os.walk ('.'):
+//         for filename in filenames:
+//             path = os.path.relpath (f'{root}/{filename}')
+//             if is_ignored (path) or not os.path.isfile (path):
+//                 continue
+//             os.remove (path)
+//
