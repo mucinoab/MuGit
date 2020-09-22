@@ -117,14 +117,14 @@ fn tree_entries(oid: String) -> Vec<(String, String, String)> {
         .collect()
 }
 
-pub fn get_tree(oid: String, base_path: String) -> HashMap<String, String> {
+pub fn get_tree(oid: String, base_path: String) -> HashMap<String, (String, String)> {
     let mut result = HashMap::new();
 
     for (name, oid, type_) in tree_entries(oid) {
-        let mut path = format!("{}{}", base_path, name);
+        let mut path = format!("{}{}", &base_path, name);
         match type_.as_str() {
             "blob" => {
-                result.insert(path, oid);
+                result.insert(base_path.to_owned(), (oid, path));
             }
 
             "tree" => {
@@ -141,10 +141,11 @@ pub fn get_tree(oid: String, base_path: String) -> HashMap<String, String> {
 
 pub fn read_tree(tree_oid: String) {
     empty_current_dir();
-    for (path, oid) in get_tree(tree_oid, String::from("./")) {
-        println!("{}", path);
-        fs::create_dir_all(Path::new(&path)).unwrap_or_default();
-        fs::write(Path::new(&path), get_object(oid, None)).unwrap();
+    for (base_path, oid_path) in get_tree(tree_oid, String::from("")) {
+        println!("{}", &oid_path.1);
+
+        fs::create_dir_all(Path::new(&base_path)).unwrap_or_default();
+        fs::write(Path::new(&oid_path.1), get_object(oid_path.0, None)).unwrap();
     }
 }
 
@@ -154,13 +155,10 @@ pub fn empty_current_dir() {
         .filter_entry(|e| !is_ignored(e.path()))
         .filter_map(|e| e.ok())
     {
-        println!("{}", entry.path().display());
         let path = entry.path();
 
         if entry.path().is_file() {
             fs::remove_file(path).unwrap();
-        } else {
-            fs::remove_dir(path).unwrap();
         }
     }
 }
