@@ -114,27 +114,31 @@ fn tree_entries(oid: String) -> Vec<(String, String, String)> {
         .collect()
 }
 
-pub fn get_tree(oid: String, mut base_path: &mut String) -> Vec<(String, String)> {
+pub fn get_tree(oid: String, base_path: String) -> Vec<(String, String)> {
     let mut result = Vec::new();
     for (name, oid, type_) in tree_entries(oid) {
-        base_path.push_str(&name);
+        let mut path = format!("{}{}", base_path, name);
         match type_.as_str() {
             "blob" => {
-                result.push((base_path.to_owned(), oid));
+                result.push((path, oid));
             }
 
             "tree" => {
-                base_path.push('/');
-                result = get_tree(oid, &mut base_path);
+                path.push('/');
+                result = get_tree(oid, path);
             }
 
-            _ => unreachable!("Unknown tree entry {}", type_),
+            _ => unreachable!("Unknown entry {}", type_),
         }
     }
 
     result
 }
 
-fn read_tree(tree_oid: String) {
-    for (path, oid) in get_tree(tree_oid, &mut String::from("./")) {}
+pub fn read_tree(tree_oid: String) {
+    for (path, oid) in get_tree(tree_oid, String::from("./")) {
+        eprintln!("{}  -  {}", &path, &oid);
+        fs::create_dir_all(Path::new(&path)).unwrap_or_default();
+        fs::write(Path::new(&path), get_object(oid, None)).unwrap();
+    }
 }

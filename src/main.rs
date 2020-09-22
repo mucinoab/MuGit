@@ -16,16 +16,11 @@ fn main() {
     // TODO use clap
     if let Some(arg) = args.next() {
         match arg.as_str() {
-            "init" => {
-                utils::init();
-                println!(
-                    "Initialized empty Git repository in {}{}",
-                    current_dir,
-                    utils::GIT_DIR
-                ); // TODO is this the current dir?
-            }
+            "init" => init(current_dir),
 
             "write-tree" => write_tree(),
+
+            "read-tree" => utils::read_tree(args.next().expect("Missing argument")),
 
             "cat-file" => cat_file(args.next().expect("Missing argument")),
 
@@ -36,6 +31,15 @@ fn main() {
     }
 
     println!("{:?}", Instant::now().duration_since(now));
+}
+
+fn init(current_dir: String) {
+    utils::init();
+    println!(
+        "Initialized empty Git repository in {}{}",
+        current_dir,
+        utils::GIT_DIR
+    ); // TODO is this the current dir?
 }
 
 fn cat_file(object: String) {
