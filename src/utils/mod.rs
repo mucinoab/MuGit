@@ -141,7 +141,7 @@ pub fn get_tree(oid: String, base_path: String) -> HashMap<String, (String, Stri
 
 pub fn read_tree(tree_oid: String) {
     empty_current_dir();
-    for (base_path, oid_path) in get_tree(tree_oid, String::from("")) {
+    for (base_path, oid_path) in get_tree(tree_oid, String::from("./")) {
         println!("{}", &oid_path.1);
 
         fs::create_dir_all(Path::new(&base_path)).unwrap_or_default();
