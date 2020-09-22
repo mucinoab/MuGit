@@ -99,3 +99,42 @@ fn is_ignored(path: &Path) -> bool {
     }
     false
 }
+
+fn tree_entries(oid: String) -> Vec<(String, String, String)> {
+    get_object(oid, Some("tree"))
+        .lines()
+        .map(|line| line.split(' '))
+        .map(|mut entry| {
+            (
+                entry.next().unwrap().into(),
+                entry.next().unwrap().into(),
+                entry.next().unwrap().into(),
+            )
+        })
+        .collect()
+}
+
+pub fn get_tree(oid: String, mut base_path: &mut String) -> Vec<(String, String)> {
+    let mut result = Vec::new();
+    for (name, oid, type_) in tree_entries(oid) {
+        base_path.push_str(&name);
+        match type_.as_str() {
+            "blob" => {
+                result.push((base_path.to_owned(), oid));
+            }
+
+            "tree" => {
+                base_path.push('/');
+                result = get_tree(oid, &mut base_path);
+            }
+
+            _ => unreachable!("Unknown tree entry {}", type_),
+        }
+    }
+
+    result
+}
+
+fn read_tree(tree_oid: String) {
+    for (path, oid) in get_tree(tree_oid, &mut String::from("./")) {}
+}
