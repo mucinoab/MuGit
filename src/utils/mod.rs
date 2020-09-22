@@ -64,13 +64,13 @@ pub fn write_tree(dir: &Path) -> String {
         let entry = entry.unwrap();
         let path = entry.path();
 
-        let type_;
-        let oid;
-        let file_name = path.file_name().unwrap_or_default().to_str();
-
         if is_ignored(&path) {
             continue;
         }
+
+        let type_;
+        let oid;
+        let file_name = path.file_name().unwrap_or_default().to_str();
 
         if path.is_dir() {
             type_ = "tree";
@@ -150,7 +150,7 @@ pub fn read_tree(tree_oid: String) {
 }
 
 pub fn empty_current_dir() {
-    for entry in WalkDir::new(".")
+    for entry in WalkDir::new("./")
         .into_iter()
         .filter_entry(|e| !is_ignored(e.path()))
         .filter_map(|e| e.ok())
