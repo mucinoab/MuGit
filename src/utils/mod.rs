@@ -88,7 +88,7 @@ pub fn write_tree(dir: &Path) -> String {
         ));
     }
 
-    entries.sort_unstable();
+    entries.sort_unstable(); // TODO Is this really necessary?
     hash_object(entries.join("\n"), Some("tree"))
 }
 
@@ -143,13 +143,13 @@ pub fn get_tree(oid: String, base_path: String) -> HashMap<String, (String, Stri
 pub fn read_tree(tree_oid: String) {
     empty_current_dir();
 
-    for (path, oid_base_path) in get_tree(tree_oid, String::from("./")) {
-        fs::create_dir_all(Path::new(&oid_base_path.1)).unwrap_or_default();
-        fs::write(Path::new(&path), get_object(oid_base_path.0, None)).unwrap();
+    for (path, (oid, base_path)) in get_tree(tree_oid, String::from("./")) {
+        fs::create_dir_all(Path::new(&base_path)).unwrap_or_default();
+        fs::write(Path::new(&path), get_object(oid, None)).unwrap();
     }
 }
 
-pub fn empty_current_dir() {
+fn empty_current_dir() {
     for entry in WalkDir::new("./")
         .into_iter()
         .filter_entry(|e| !is_ignored(e.path()))
@@ -162,5 +162,31 @@ pub fn empty_current_dir() {
         } else {
             fs::remove_dir(path).unwrap_or_default();
         }
+    }
+}
+
+pub fn commit(message: String) {
+    let mut commit = format!("tree {}\n", write_tree(Path::new("./")));
+
+    if let Some(head) = get_head() {
+        let head = format!("parent {}\n", head);
+        commit.push_str(&head);
+    }
+
+    commit.push_str(&format!("\n{}\n", message));
+
+    let oid = hash_object(commit, Some("commit"));
+    set_head(&oid);
+}
+
+fn set_head(oid: &String) {
+    fs::write(format!("{}/HEAD", GIT_DIR), oid).expect("Could not write HEAD");
+}
+
+fn get_head() -> Option<String> {
+    if let Ok(head) = fs::read_to_string(format!("{}/HEAD", GIT_DIR)) {
+        Some(head.trim().into())
+    } else {
+        None
     }
 }

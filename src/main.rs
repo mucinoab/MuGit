@@ -26,6 +26,8 @@ fn main() {
 
             "hash-object" => hash_object(args.next().expect("Missing argument")),
 
+            "commit" => utils::commit(args.next().expect("Missing commit message")), // TODO -m and -message flags
+
             _ => {}
         }
     }
