@@ -5,6 +5,9 @@ extern crate lazy_static;
 
 use std::{env, path::Path, time::Instant};
 
+use textwrap::indent;
+use yansi::Paint;
+
 mod utils;
 
 fn main() {
@@ -27,6 +30,8 @@ fn main() {
             "hash-object" => hash_object(args.next().expect("Missing argument")),
 
             "commit" => utils::commit(args.next().expect("Missing commit message")), // TODO -m and -message flags
+
+            "log" => log(),
 
             _ => {}
         }
@@ -54,4 +59,21 @@ fn hash_object(object: String) {
 
 fn write_tree() {
     println!("{}", utils::write_tree(Path::new(".")));
+}
+
+fn log() {
+    let mut oid = utils::get_head();
+
+    while let Some(oid_p) = oid {
+        let (_, parent, message) = utils::get_commit(oid_p.to_owned());
+
+        println!(
+            "{} {}\n{}",
+            Paint::yellow("commit"),
+            Paint::yellow(oid_p),
+            indent(&textwrap::fill(&message, 80), "    ")
+        );
+
+        oid = parent;
+    }
 }

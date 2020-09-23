@@ -183,10 +183,40 @@ fn set_head(oid: &String) {
     fs::write(format!("{}/HEAD", GIT_DIR), oid).expect("Could not write HEAD");
 }
 
-fn get_head() -> Option<String> {
+pub fn get_head() -> Option<String> {
     if let Ok(head) = fs::read_to_string(format!("{}/HEAD", GIT_DIR)) {
         Some(head.trim().into())
     } else {
         None
     }
+}
+
+pub fn get_commit(oid: String) -> (String, Option<String>, String) {
+    let commit = get_object(oid, Some("commit"));
+    let mut parent = None;
+    let mut tree = String::new();
+
+    for line in commit.lines().take(2) {
+        let mut kv = line.splitn(2, ' ');
+        let key = kv.next().unwrap_or_default();
+        let value = kv.next().unwrap_or_default();
+
+        match key {
+            "tree" => {
+                tree = value.to_string();
+            }
+
+            "parent" => {
+                parent = Some(value.to_string());
+            }
+
+            "" => break,
+
+            _ => unreachable!("Unknown field {}", key),
+        }
+    }
+
+    let message = commit.lines().skip(2).collect::<Vec<&str>>().join("\n");
+
+    (tree, parent, message)
 }
