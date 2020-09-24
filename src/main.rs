@@ -31,7 +31,7 @@ fn main() {
 
             "commit" => utils::commit(args.next().expect("Missing commit message")), // TODO -m and -message flags
 
-            "log" => log(),
+            "log" => log(args.next()),
 
             _ => {}
         }
@@ -61,8 +61,10 @@ fn write_tree() {
     println!("{}", utils::write_tree(Path::new(".")));
 }
 
-fn log() {
-    let mut oid = utils::get_head();
+fn log(mut oid: Option<String>) {
+    if oid.is_none() {
+        oid = utils::get_head();
+    }
 
     while let Some(oid_p) = oid {
         let (_, parent, message, date) = utils::get_commit(oid_p.to_owned());
