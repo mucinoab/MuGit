@@ -208,7 +208,6 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
         let mut kv = line.splitn(2, ' ');
         let key = kv.next().unwrap_or_default();
         let value = kv.next().unwrap_or_default();
-        //eprintln!("-{}-{}-", key, value);
 
         match key {
             "tree" => {
