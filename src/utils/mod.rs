@@ -174,7 +174,11 @@ pub fn commit(message: String) {
         commit.push_str(&head);
     }
 
-    commit.push_str(&format!("Date: {}{}\n", Utc::now().format("%c"), message));
+    commit.push_str(&format!(
+        "Date: {}\n{}\n",
+        Local::now().format("%c %z"),
+        message
+    ));
 
     let oid = hash_object(commit, Some("commit"));
     set_head(&oid);
