@@ -1,11 +1,11 @@
 use std::{
-    collections::HashMap,
     fs::{self, File},
     io::{prelude::*, BufReader},
     path::Path,
 };
 
 use chrono::prelude::*;
+use hashbrown::HashMap;
 use walkdir::WalkDir;
 
 pub const GIT_DIR: &str = "./.mu_git";
