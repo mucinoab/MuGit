@@ -65,12 +65,13 @@ fn log() {
     let mut oid = utils::get_head();
 
     while let Some(oid_p) = oid {
-        let (_, parent, message) = utils::get_commit(oid_p.to_owned());
+        let (_, parent, message, date) = utils::get_commit(oid_p.to_owned());
 
         println!(
-            "{} {}\n{}",
+            "{} {}\n{}\n\n{}",
             Paint::yellow("commit"),
             Paint::yellow(oid_p),
+            date,
             indent(&textwrap::fill(&message, 80), "    ")
         );
 

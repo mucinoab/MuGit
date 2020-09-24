@@ -5,6 +5,7 @@ use std::{
     path::Path,
 };
 
+use chrono::prelude::*;
 use walkdir::WalkDir;
 
 pub const GIT_DIR: &str = "./.mu_git";
@@ -173,7 +174,7 @@ pub fn commit(message: String) {
         commit.push_str(&head);
     }
 
-    commit.push_str(&format!("\n{}\n", message));
+    commit.push_str(&format!("Date: {}{}\n", Utc::now().format("%c"), message));
 
     let oid = hash_object(commit, Some("commit"));
     set_head(&oid);
@@ -191,15 +192,19 @@ pub fn get_head() -> Option<String> {
     }
 }
 
-pub fn get_commit(oid: String) -> (String, Option<String>, String) {
+pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
     let commit = get_object(oid, Some("commit"));
-    let mut parent = None;
-    let mut tree = String::new();
+    let mut n = 0;
 
-    for line in commit.lines().take(2) {
+    let mut parent = None;
+    let mut tree = String::with_capacity(40);
+    let mut date = String::with_capacity(32);
+
+    for line in commit.lines() {
         let mut kv = line.splitn(2, ' ');
         let key = kv.next().unwrap_or_default();
         let value = kv.next().unwrap_or_default();
+        //eprintln!("-{}-{}-", key, value);
 
         match key {
             "tree" => {
@@ -210,13 +215,17 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String) {
                 parent = Some(value.to_string());
             }
 
-            "" => break,
+            "Date:" => {
+                date.push_str("Date:  ");
+                date.push_str(value);
+            }
 
-            _ => unreachable!("Unknown field {}", key),
+            _ => break, //TODO is unreachable!("Unknown field {}", key) necessary?,
         }
+        n += 1; // if a commit has no parent this number may vary.
     }
 
-    let message = commit.lines().skip(2).collect::<Vec<&str>>().join("\n");
+    let message = commit.lines().skip(n).collect::<Vec<&str>>().join("\n");
 
-    (tree, parent, message)
+    (tree, parent, message, date)
 }
