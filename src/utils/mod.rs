@@ -225,10 +225,16 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
 
             _ => break, //TODO is unreachable!("Unknown field {}", key) necessary?,
         }
-        n += 1; // if a commit has no parent this number may vary.
+        n += 1; // if a commit has no parent this number will vary.
     }
 
     let message = commit.lines().skip(n).collect::<Vec<&str>>().join("\n");
 
     (tree, parent, message, date)
+}
+
+pub fn checkout(oid: String) {
+    let (tree, ..) = get_commit(oid.to_owned());
+    read_tree(tree);
+    set_head(&oid);
 }

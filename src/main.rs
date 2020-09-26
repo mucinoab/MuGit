@@ -70,7 +70,7 @@ fn log(mut oid: Option<String>) {
         let (_, parent, message, date) = utils::get_commit(oid_p.to_owned());
 
         println!(
-            "{} {}\n{}\n\n{}",
+            "{} {}\nDate:  {}\n\n{}",
             Paint::yellow("commit"),
             Paint::yellow(oid_p),
             date,
