@@ -9,6 +9,8 @@ use hashbrown::HashMap;
 use walkdir::WalkDir;
 
 pub const GIT_DIR: &str = "./.mu_git";
+pub const HEAD: &str = "HEAD";
+pub const TAGS: &str = "refs/tags/";
 const NULL_CHAR: &str = unsafe { std::str::from_utf8_unchecked(&[0]) };
 
 lazy_static! {
@@ -27,6 +29,7 @@ lazy_static! {
 
 pub fn init() {
     fs::create_dir(GIT_DIR).expect("Failed to create .mu_git directory");
+    fs::create_dir_all(format!("{}/{}", GIT_DIR, TAGS)).expect("Failed to create directories");
     fs::create_dir(format!("{}/objects", GIT_DIR))
         .expect("Failed to create .mu_git/objects directory");
 }
@@ -169,7 +172,7 @@ fn empty_current_dir() {
 pub fn commit(message: String) {
     let mut commit = format!("tree {}\n", write_tree(Path::new("./")));
 
-    if let Some(head) = get_head() {
+    if let Some(head) = get_ref(HEAD) {
         let head = format!("parent {}\n", head);
         commit.push_str(&head);
     }
@@ -181,15 +184,18 @@ pub fn commit(message: String) {
     ));
 
     let oid = hash_object(commit, Some("commit"));
-    set_head(&oid);
+    update_ref(HEAD, &oid);
 }
 
-fn set_head(oid: &String) {
-    fs::write(format!("{}/HEAD", GIT_DIR), oid).expect("Could not write HEAD");
+fn update_ref(refe: &str, oid: &String) {
+    let ref_path = format!("{}/{}", GIT_DIR, refe);
+    fs::write(ref_path, oid).expect("Could not write reference");
 }
 
-pub fn get_head() -> Option<String> {
-    if let Ok(head) = fs::read_to_string(format!("{}/HEAD", GIT_DIR)) {
+pub fn get_ref(refe: &str) -> Option<String> {
+    let ref_path = format!("{}/{}", GIT_DIR, refe);
+
+    if let Ok(head) = fs::read_to_string(ref_path) {
         Some(head.trim().into())
     } else {
         None
@@ -202,7 +208,7 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
 
     let mut parent = None;
     let mut tree = String::with_capacity(40);
-    let mut date = String::with_capacity(32);
+    let mut date = String::with_capacity(64);
 
     for line in commit.lines() {
         let mut kv = line.splitn(2, ' ');
@@ -223,9 +229,9 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
                 date.push_str(value);
             }
 
-            _ => break, //TODO is unreachable!("Unknown field {}", key) necessary?,
+            _ => break,
         }
-        n += 1; // if a commit has no parent this number will vary.
+        n += 1;
     }
 
     let message = commit.lines().skip(n).collect::<Vec<&str>>().join("\n");
@@ -236,5 +242,9 @@ pub fn get_commit(oid: String) -> (String, Option<String>, String, String) {
 pub fn checkout(oid: String) {
     let (tree, ..) = get_commit(oid.to_owned());
     read_tree(tree);
-    set_head(&oid);
+    update_ref(HEAD, &oid);
+}
+
+pub fn create_tag(name: String, oid: String) {
+    update_ref(&format!("{}{}", TAGS, name), &oid);
 }

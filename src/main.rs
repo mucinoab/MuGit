@@ -33,7 +33,11 @@ fn main() {
 
             "log" => log(args.next()),
 
-            _ => {}
+            "checkout" => utils::checkout(args.next().expect("Missing argument")),
+
+            "tag" => tag(args.next().expect("Missing argument"), args.next()),
+
+            _ => eprintln!("MuGit: '{}' is not a MuGit command. See 'mugit -h'", arg),
         }
     }
 
@@ -63,14 +67,14 @@ fn write_tree() {
 
 fn log(mut oid: Option<String>) {
     if oid.is_none() {
-        oid = utils::get_head();
+        oid = utils::get_ref(utils::HEAD);
     }
 
     while let Some(oid_p) = oid {
         let (_, parent, message, date) = utils::get_commit(oid_p.to_owned());
 
         println!(
-            "{} {}\nDate:  {}\n\n{}",
+            "{} {}\n{}\n\n{}",
             Paint::yellow("commit"),
             Paint::yellow(oid_p),
             date,
@@ -79,4 +83,12 @@ fn log(mut oid: Option<String>) {
 
         oid = parent;
     }
+}
+
+fn tag(name: String, mut oid: Option<String>) {
+    if oid.is_none() {
+        oid = utils::get_ref(utils::HEAD);
+    }
+
+    utils::create_tag(name, oid.unwrap());
 }
