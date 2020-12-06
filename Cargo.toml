@@ -6,9 +6,12 @@ edition = "2018"
 
 [dependencies]
 sha1 = { version = "0.6.0", features = ["std"] }
-lazy_static = "1.4.0"
 walkdir = "2.3.1"
-textwrap = "0.12.1"
-yansi = "0.5.0"
-chrono = "0.4.15"
-hashbrown = "0.9.0"
+textwrap = "0.13.0"
+chrono = "0.4.19"
+hashbrown = { version = "0.9.1", features = ["nightly"] }
+owo-colors = "1.2.1"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

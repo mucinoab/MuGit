@@ -1,12 +1,10 @@
 #![feature(const_str_from_utf8_unchecked)]
-
-#[macro_use]
-extern crate lazy_static;
+#![feature(once_cell)]
 
 use std::{env, path::Path, time::Instant};
 
+use owo_colors::OwoColorize;
 use textwrap::indent;
-use yansi::Paint;
 
 mod utils;
 
@@ -54,7 +52,7 @@ fn init(current_dir: String) {
 }
 
 fn cat_file(object: String) {
-    println!("{}", utils::get_object(object, None));
+    println!("{}", utils::get_object(utils::get_oid(object), None));
 }
 
 fn hash_object(object: String) {
@@ -67,18 +65,22 @@ fn write_tree() {
 
 fn log(mut oid: Option<String>) {
     if oid.is_none() {
-        oid = utils::get_ref(utils::HEAD);
+        oid = Some(String::from("@"));
     }
 
-    while let Some(oid_p) = oid {
-        let (_, parent, message, date) = utils::get_commit(oid_p.to_owned());
+    while let Some(mut oid_p) = oid {
+        oid_p = utils::get_oid(oid_p);
+
+        let (_, parent, mut message, date) = utils::get_commit(oid_p.to_owned());
+
+        textwrap::fill_inplace(&mut message, 80);
 
         println!(
             "{} {}\n{}\n\n{}",
-            Paint::yellow("commit"),
-            Paint::yellow(oid_p),
+            "commit".yellow(),
+            oid_p.yellow(),
             date,
-            indent(&textwrap::fill(&message, 80), "    ")
+            indent(&message, "    ")
         );
 
         oid = parent;
@@ -87,8 +89,10 @@ fn log(mut oid: Option<String>) {
 
 fn tag(name: String, mut oid: Option<String>) {
     if oid.is_none() {
-        oid = utils::get_ref(utils::HEAD);
+        oid = Some(String::from("@"));
     }
 
-    utils::create_tag(name, oid.unwrap());
+    let oid = utils::get_oid(oid.unwrap());
+
+    utils::create_tag(name, oid);
 }

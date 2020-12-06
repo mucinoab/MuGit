@@ -1,6 +1,7 @@
 use std::{
     fs::{self, File},
     io::{prelude::*, BufReader},
+    lazy::SyncLazy,
     path::Path,
 };
 
@@ -13,19 +14,17 @@ pub const HEAD: &str = "HEAD";
 pub const TAGS: &str = "refs/tags/";
 const NULL_CHAR: &str = unsafe { std::str::from_utf8_unchecked(&[0]) };
 
-lazy_static! {
-    static ref GIT_IGNORE: Vec<String> = {
-        if let Ok(file) = File::open(".gitignore") {
-            BufReader::new(file)
-                .lines()
-                .filter_map(Result::ok)
-                .map(|x| x.trim().to_string())
-                .collect()
-        } else {
-            Vec::new()
-        }
-    };
-}
+static GIT_IGNORE: SyncLazy<Vec<String>> = SyncLazy::new(|| {
+    if let Ok(file) = File::open(".gitignore") {
+        BufReader::new(file)
+            .lines()
+            .filter_map(Result::ok)
+            .map(|x| x.trim().to_string())
+            .collect()
+    } else {
+        Vec::new()
+    }
+});
 
 pub fn init() {
     fs::create_dir(GIT_DIR).expect("Failed to create .mu_git directory");
@@ -44,7 +43,7 @@ pub fn hash_object(data: String, type_: Option<&str>) -> String {
 
     fs::write(format!("{}/objects/{}", GIT_DIR, oid), obj).expect("Could not write object file");
 
-    return oid;
+    oid
 }
 
 pub fn get_object(oid: String, expected: Option<&str>) -> String {
@@ -53,9 +52,8 @@ pub fn get_object(oid: String, expected: Option<&str>) -> String {
     let type_ = &obj[..null];
     let content = &obj[null + 1..];
 
-    match expected {
-        Some(expected) => assert_eq!(type_, expected, "Expected {}, got {}", type_, expected),
-        None => {}
+    if let Some(expected) = expected {
+        assert_eq!(type_, expected, "Expected {}, got {}", type_, expected)
     }
 
     content.to_owned()
@@ -94,6 +92,33 @@ pub fn write_tree(dir: &Path) -> String {
 
     entries.sort_unstable(); // TODO Is this really necessary?
     hash_object(entries.join("\n"), Some("tree"))
+}
+
+pub fn get_oid(mut name: String) -> String {
+    if &name == "@" {
+        name = String::from("HEAD")
+    }
+
+    let refs_to_try = vec![
+        format!("{}", name),
+        format!("refs/{}", name),
+        format!("refs/tags/{}", name),
+        format!("refs/heads/{}", name),
+    ];
+
+    for refr in refs_to_try {
+        if let Some(name) = get_ref(&refr) {
+            return name;
+        }
+    }
+
+    let is_hex = name.chars().any(|chr| !chr.is_ascii_hexdigit());
+
+    if name.len() == 40 && is_hex {
+        return name;
+    }
+
+    unreachable!("Unknown name {}", name);
 }
 
 fn is_ignored(path: &Path) -> bool {
@@ -144,12 +169,15 @@ pub fn get_tree(oid: String, base_path: String) -> HashMap<String, (String, Stri
     result
 }
 
-pub fn read_tree(tree_oid: String) {
+pub fn read_tree(mut tree_oid: String) {
     empty_current_dir();
+    tree_oid = get_oid(tree_oid);
 
-    for (path, (oid, base_path)) in get_tree(tree_oid, String::from("./")) {
+    let tree = get_tree(tree_oid, String::from("./"));
+
+    for (path, (oid, base_path)) in tree {
         fs::create_dir_all(Path::new(&base_path)).unwrap_or_default();
-        fs::write(Path::new(&path), get_object(oid, None)).unwrap();
+        fs::write(Path::new(&path), get_object(oid.clone(), None)).unwrap();
     }
 }
 
@@ -187,7 +215,7 @@ pub fn commit(message: String) {
     update_ref(HEAD, &oid);
 }
 
-fn update_ref(refe: &str, oid: &String) {
+fn update_ref(refe: &str, oid: &str) {
     let ref_path = format!("{}/{}", GIT_DIR, refe);
     fs::write(ref_path, oid).expect("Could not write reference");
 }
