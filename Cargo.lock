@@ -116,9 +116,9 @@ dependencies = [
 
 [[package]]
 name = "owo-colors"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfea10fc4a7e897bc95f2e5f6a2c2a48d8a6594e14953289de816e6c74c34918"
+checksum = "503a1a6634186cefb8adc93a751df98215c52b8db8bf416b496865f04ec09e13"
 
 [[package]]
 name = "regex"
