@@ -10,7 +10,7 @@ walkdir = "2.3.2"
 textwrap = "0.14.2"
 chrono = "0.4.21"
 hashbrown = { version = "0.12.3", features = ["nightly"] }
-owo-colors = "3.0.0"
+owo-colors = "3.4.0"
 
 [profile.release]
 lto = "fat"
