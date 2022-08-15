@@ -8,7 +8,7 @@ edition = "2018"
 sha1 = { version = "0.10.1", features = ["std"] }
 walkdir = "2.3.2"
 textwrap = "0.15.0"
-chrono = "0.4.21"
+chrono = "0.4.22"
 hashbrown = { version = "0.12.3", features = ["nightly"] }
 owo-colors = "3.4.0"
 
